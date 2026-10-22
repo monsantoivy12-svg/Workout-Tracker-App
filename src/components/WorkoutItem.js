@@ -1,35 +1,67 @@
+import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
-import { TouchableOpacity, Text, View, Image } from 'react-native';
-import AppCard from './AppCard';
+import { Image, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../constants/theme';
 
 export default function WorkoutItem({ workout, onPress }) {
   const [failed, setFailed] = useState(false);
 
   return (
-    <TouchableOpacity onPress={onPress}>
-      <AppCard style={{ padding: 0, overflow: 'hidden', flexDirection: 'row' }}>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
+      <View
+        style={{
+          backgroundColor: colors.light,
+          borderRadius: 18,
+          padding: 10,
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginBottom: 12,
+        }}
+      >
         {workout.image && !failed ? (
           <Image
             source={{ uri: workout.image }}
-            style={{ width: 100, height: 100 }}
+            style={{ width: 88, height: 88, borderRadius: 14 }}
             resizeMode="cover"
             onError={() => setFailed(true)}
           />
         ) : (
-          <View style={{ width: 100, height: 100, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' }}>
+          <View
+            style={{
+              width: 88,
+              height: 88,
+              borderRadius: 14,
+              backgroundColor: '#E5E7EB',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
             <Text style={{ fontSize: 32 }}>🏋️</Text>
           </View>
         )}
 
-        <View style={{ flex: 1, padding: 12, justifyContent: 'center' }}>
-          <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>{workout.name}</Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
-            <Text style={{ color: colors.muted }}>⏱ {workout.duration} min</Text>
-            <Text style={{ color: colors.muted }}>🔥 {workout.calories} kcal</Text>
-          </View>
+        <View style={{ flex: 1, paddingHorizontal: 12 }}>
+          <Text
+            numberOfLines={2}
+            style={{
+              fontSize: 16,
+              fontWeight: '900',
+              color: '#111',
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
+            }}
+          >
+            {workout.name}
+          </Text>
+          <Text style={{ marginTop: 8, color: '#9CA3AF', fontSize: 12, fontWeight: '700' }}>
+            {workout.duration} MIN  •  {workout.calories} KCAL
+          </Text>
         </View>
-      </AppCard>
+
+        <View style={{ alignSelf: 'flex-start', padding: 4 }}>
+          <Feather name="arrow-up-right" size={20} color="#111" />
+        </View>
+      </View>
     </TouchableOpacity>
   );
 }

@@ -1,17 +1,15 @@
-// Color palette: white, purple, blue, orange
 export const colors = {
-  bg: '#FFFFFF',        // white (background)
-  surface: '#F5F3FF',   // light purple tint
-  dark: '#3B0764',      // deep purple (headers, login background)
-  primary: '#7C3AED',   // purple
-  secondary: '#2563EB', // blue
-  accent: '#F97316',    // orange
+  primary: '#F5A03C',   // orange
+  secondary: '#FFB95E',
+  accent: '#F5A03C',
   danger: '#EF4444',
-  text: '#1E1B4B',
-  muted: '#6B7280',
-  card: '#FFFFFF',
-  border: '#DDD6FE',
+  dark: '#0F0F10',      // black background
+  card: '#1E1E20',      // dark cards
+  surface: '#2A2A2D',   // dark rows / tiles
+  light: '#FAFAFA',     // white list cards
+  text: '#FFFFFF',      // WHITE text (importante!)
+  muted: '#9CA3AF',
+  border: '#3A3A3D',
 };
 
-// Background picture sa mga screen (direct image URL). Ilisi sa imong gusto.
-export const bgImage = 'https://wallpapercave.com/wp/wp6574239.jpg';
+export const bgImage = '';

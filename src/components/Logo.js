@@ -1,7 +1,6 @@
 import { View, Text } from 'react-native';
 import { colors } from '../constants/theme';
 
-// Simple dumbbell logo built from Views (matches assets/logo.svg)
 export default function Logo({ size = 1 }) {
   const bar = (w, h) => ({ width: w * size, height: h * size, borderRadius: 6 * size });
   return (

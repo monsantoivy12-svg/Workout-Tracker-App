@@ -1,5 +1,7 @@
-import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
+import { colors } from '../constants/theme';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { WorkoutProvider } from '../context/WorkoutContext';
 
@@ -16,10 +18,28 @@ function AuthGate() {
   }, [user, segments]);
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="workout/[id]" options={{ headerShown: true, title: 'Workout Details' }} />
-      <Stack.Screen name="edit/[id]" options={{ headerShown: true, title: 'Edit Workout' }} />
-    </Stack>
+    <>
+      <StatusBar style="light" />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.dark },
+        }}
+      >
+        {/* Details screen draws its own top bar + Back button */}
+        <Stack.Screen name="workout/[id]" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="edit/[id]"
+          options={{
+            headerShown: true,
+            title: 'Edit Workout',
+            headerStyle: { backgroundColor: colors.dark },
+            headerTintColor: '#fff',
+            headerTitleStyle: { fontWeight: '800' },
+          }}
+        />
+      </Stack>
+    </>
   );
 }
 

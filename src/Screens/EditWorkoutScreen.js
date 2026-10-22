@@ -1,7 +1,9 @@
-import { ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import WorkoutForm from '../components/WorkoutForm';
+import { ScrollView, Text, View } from 'react-native';
 import AppButton from '../components/AppButton';
+import AppCard from '../components/AppCard';
+import WorkoutForm from '../components/WorkoutForm';
+import { colors } from '../constants/theme';
 import { useWorkouts } from '../context/WorkoutContext';
 
 export default function EditWorkoutScreen() {
@@ -13,21 +15,23 @@ export default function EditWorkoutScreen() {
   if (!w)
     return (
       <View style={{ padding: 20 }}>
-        <Text style={{ marginBottom: 12 }}>Workout not found.</Text>
+        <Text style={{ marginBottom: 12, color: colors.text }}>Workout not found.</Text>
         <AppButton title="Go to Home" onPress={() => router.replace('/(tabs)')} />
       </View>
     );
 
   return (
     <ScrollView style={{ backgroundColor: 'transparent' }} contentContainerStyle={{ padding: 16 }}>
-      <WorkoutForm
-        initial={w}
-        submitLabel="Update Workout"
-        onSubmit={(d) => {
-          updateWorkout(id, d);
-          router.back();
-        }}
-      />
+      <AppCard>
+        <WorkoutForm
+          initial={w}
+          submitLabel="Update Workout"
+          onSubmit={(d) => {
+            updateWorkout(id, d);
+            router.back();
+          }}
+        />
+      </AppCard>
     </ScrollView>
   );
 }

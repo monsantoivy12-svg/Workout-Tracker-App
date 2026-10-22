@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { Text, Image, View, Linking, Alert } from 'react-native';
-import AppCard from './AppCard';
-import AppButton from './AppButton';
+import { Alert, Image, Linking, Text, View } from 'react-native';
 import { colors } from '../constants/theme';
+import AppButton from './AppButton';
+import AppCard from './AppCard';
 
-// Card para sa usa ka suggested workout (naay picture ug video link gikan sa URL)
 export default function SuggestionCard({ item, onAdd }) {
   const [imgFailed, setImgFailed] = useState(false);
 
@@ -27,20 +26,30 @@ export default function SuggestionCard({ item, onAdd }) {
       )}
 
       <View style={{ padding: 16 }}>
-        <Text style={{ color: colors.accent, fontWeight: '700', fontSize: 12 }}>
-          {item.category.toUpperCase()} • {item.level}
+        <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 12, letterSpacing: 0.5 }}>
+          {item.category.toUpperCase()} • {item.level.toUpperCase()}
         </Text>
-        <Text style={{ fontSize: 18, fontWeight: '800', marginVertical: 4 }}>{item.name}</Text>
+        <Text
+          style={{
+            fontSize: 20,
+            fontWeight: '900',
+            marginVertical: 4,
+            color: colors.text,
+            textTransform: 'uppercase',
+          }}
+        >
+          {item.name}
+        </Text>
         <Text style={{ color: colors.muted, marginBottom: 6 }}>
           ⏱ {item.duration} min   🔥 {item.calories} kcal
         </Text>
         {item.exercises.map((e) => (
-          <Text key={e} style={{ color: colors.text, fontSize: 13 }}>• {e}</Text>
+          <Text key={e} style={{ color: colors.text, fontSize: 13, opacity: 0.85 }}>• {e}</Text>
         ))}
         {item.video ? (
           <AppButton variant="outline" title="▶ Watch video" onPress={openVideo} style={{ marginTop: 10 }} />
         ) : null}
-        <AppButton variant="secondary" title="Add to my workouts" onPress={() => onAdd(item)} />
+        <AppButton title="Add to my workouts" onPress={() => onAdd(item)} />
       </View>
     </AppCard>
   );

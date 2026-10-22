@@ -1,18 +1,21 @@
 import { useState } from 'react';
 import { Alert } from 'react-native';
-import AppInput from './AppInput';
 import AppButton from './AppButton';
+import AppInput from './AppInput';
 
-// Reused by Add (create) and Edit (update) screens
 export default function WorkoutForm({ initial = {}, submitLabel, onSubmit }) {
   const [name, setName] = useState(initial.name || '');
-  const [duration, setDuration] = useState(initial.duration ? String(initial.duration) : '');
-  const [calories, setCalories] = useState(initial.calories ? String(initial.calories) : '');
+  const [duration, setDuration] = useState(initial.duration != null ? String(initial.duration) : '');
+  const [calories, setCalories] = useState(initial.calories != null ? String(initial.calories) : '');
   const [notes, setNotes] = useState(initial.notes || '');
   const [image, setImage] = useState(initial.image || '');
 
   const submit = () => {
-    if (!name.trim() || !duration) return Alert.alert('Missing info', 'Name and duration are required.');
+    if (!name.trim() || !duration.trim())
+      return Alert.alert('Missing info', 'Name and duration are required.');
+    if (!(Number(duration) > 0))
+      return Alert.alert('Invalid duration', 'Duration must be a number greater than 0.');
+
     onSubmit({
       name: name.trim(),
       duration: Number(duration),
