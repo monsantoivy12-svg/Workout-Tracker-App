@@ -51,7 +51,7 @@ export default function ProfileScreen() {
           variant="danger"
           onPress={() => {
             logout();
-            router.replace('/login');
+            router.replace('/welcome');
           }}
         />
       </View>

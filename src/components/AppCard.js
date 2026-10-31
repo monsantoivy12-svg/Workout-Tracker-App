@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { colors } from '../constants/theme';
 
 export default function AppCard({ title, children, style }) {
@@ -18,6 +18,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: colors.border,
+    // elevation (Android)
+    elevation: 8,
+    // shadow (iOS)
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
   },
   title: {
     fontSize: 16,

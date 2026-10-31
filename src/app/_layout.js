@@ -12,10 +12,11 @@ function AuthGate() {
   const router = useRouter();
 
   useEffect(() => {
-    const onAuthScreen = segments[0] === 'login' || segments[0] === 'register';
-    if (!user && !onAuthScreen) router.replace('/login');
-    if (user && onAuthScreen) router.replace('/(tabs)');
-  }, [user, segments]);
+  const onAuthScreen =
+    segments[0] === 'welcome' || segments[0] === 'login' || segments[0] === 'register';
+  if (!user && !onAuthScreen) router.replace('/welcome');
+  if (user && onAuthScreen) router.replace('/(tabs)');
+}, [user, segments]);
 
   return (
     <>

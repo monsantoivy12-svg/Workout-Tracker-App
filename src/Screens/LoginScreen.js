@@ -1,15 +1,20 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import AppButton from '../components/AppButton';
 import AppInput from '../components/AppInput';
 import AppMessage from '../components/AppMessage';
-import Logo from '../components/Logo';
+import AuthHeader from '../components/AuthHeader';
+import ScreenBackground from '../components/ScreenBackground';
+import SocialButtons from '../components/SocialButtons';
+import { colors } from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(false);
   const [message, setMessage] = useState(null);
   const { login } = useAuth();
   const router = useRouter();
@@ -21,101 +26,65 @@ export default function LoginScreen() {
   };
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
-      <View style={styles.logoWrap}>
-        <Logo size={1.2} />
-      </View>
-
-      <View style={styles.card}>
+    <ScreenBackground>
+      <AuthHeader title="Login" onBack={() => router.replace('/welcome')} />
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Welcome back!</Text>
-        <Text style={styles.subtitle}>Please login to your account.</Text>
+        <Text style={styles.subtitle}>Please log in with your details</Text>
 
         <AppMessage message={message} />
 
-        <View style={styles.form}>
-          <AppInput
-            label="Email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          <AppInput
-            label="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
+        <AppInput
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <AppInput
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+
+        <View style={styles.row}>
+          <TouchableOpacity style={styles.remember} onPress={() => setRemember(!remember)}>
+            <Ionicons
+              name={remember ? 'checkbox' : 'square-outline'}
+              size={18}
+              color={remember ? colors.primary : colors.muted}
+            />
+            <Text style={styles.small}>Remember me</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => Alert.alert('Forgot password', 'This feature is not available yet.')}
+          >
+            <Text style={styles.small}>Forgot password?</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.actions}>
-          <AppButton title="Login" onPress={onLogin} />
-          <AppButton
-            title="Create an account"
-            variant="outline"
-            onPress={() => router.push('/register')}
-          />
+        <AppButton title="Login" onPress={onLogin} style={{ marginTop: 20 }} />
+
+        <SocialButtons />
+
+        <View style={styles.footer}>
+          <Text style={styles.small}>Don't have an account? </Text>
+          <TouchableOpacity onPress={() => router.push('/register')}>
+            <Text style={[styles.small, { color: colors.primary, fontWeight: '800' }]}>Sign Up</Text>
+          </TouchableOpacity>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    backgroundColor: 'transparent',
-  },
-  content: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  logoWrap: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 420,
-    backgroundColor: '#1E1E20',
-    padding: 24,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#3A3A3D',
-    // shadow (iOS)
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    // shadow (Android)
-    elevation: 6,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    textAlign: 'center',
-    marginTop: 4,
-    marginBottom: 16,
-  },
-  form: {
-    gap: 12,
-    marginTop: 8,
-  },
-  actions: {
-    gap: 12,
-    marginTop: 20,
-  },
+  content: { padding: 24, paddingBottom: 40 },
+  title: { color: colors.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginTop: 12 },
+  subtitle: { color: colors.muted, fontSize: 13, textAlign: 'center', marginTop: 4, marginBottom: 24 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  remember: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  small: { color: colors.muted, fontSize: 12 },
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
 });

@@ -1,10 +1,10 @@
 import ScreenBackground from '../../components/ScreenBackground';
-import AddScreen from '../../Screens/AddScreen';
+import ProgressScreen from '../../Screens/ProgressScreen';
 
 export default function Route() {
   return (
     <ScreenBackground>
-      <AddScreen />
+      <ProgressScreen />
     </ScreenBackground>
   );
 }

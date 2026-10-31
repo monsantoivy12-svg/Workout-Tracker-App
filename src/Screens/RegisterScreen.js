@@ -1,11 +1,13 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import AppButton from '../components/AppButton';
 import AppInput from '../components/AppInput';
 import AppMessage from '../components/AppMessage';
-import Logo from '../components/Logo';
+import AuthHeader from '../components/AuthHeader';
 import ScreenBackground from '../components/ScreenBackground';
+import SocialButtons from '../components/SocialButtons';
+import { colors } from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
 
 export default function RegisterScreen() {
@@ -30,57 +32,38 @@ export default function RegisterScreen() {
 
   return (
     <ScreenBackground>
-      <ScrollView
-        style={styles.screen}
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.logoWrap}>
-          <Logo />
-        </View>
+      <AuthHeader title="Sign Up" onBack={() => router.replace('/welcome')} />
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <Text style={styles.title}>Create Account</Text>
+        <Text style={styles.subtitle}>Sign up to start tracking your workouts</Text>
 
-        <View style={styles.card}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Sign up to start tracking your workouts.</Text>
+        <AppMessage message={message} />
 
-          <AppMessage message={message} />
+        <AppInput placeholder="Full name" value={name} onChangeText={setName} autoCapitalize="words" />
+        <AppInput
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <AppInput placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
+        <AppInput
+          placeholder="Confirm password"
+          value={confirm}
+          onChangeText={setConfirm}
+          secureTextEntry
+        />
 
-          <View style={styles.form}>
-            <AppInput
-              label="Full name"
-              value={name}
-              onChangeText={setName}
-              autoCapitalize="words"
-            />
-            <AppInput
-              label="Email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <AppInput
-              label="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-            <AppInput
-              label="Confirm password"
-              value={confirm}
-              onChangeText={setConfirm}
-              secureTextEntry
-            />
-          </View>
+        <AppButton title="Register" onPress={onRegister} style={{ marginTop: 12 }} />
 
-          <View style={styles.actions}>
-            <AppButton title="Register" onPress={onRegister} />
-            <AppButton
-              title="Back to login"
-              variant="outline"
-              onPress={() => router.replace('/login')}
-            />
-          </View>
+        <SocialButtons />
+
+        <View style={styles.footer}>
+          <Text style={styles.small}>Already have an account? </Text>
+          <TouchableOpacity onPress={() => router.replace('/login')}>
+            <Text style={[styles.small, { color: colors.primary, fontWeight: '800' }]}>Login</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </ScreenBackground>
@@ -88,54 +71,9 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    backgroundColor: 'transparent',
-  },
-  content: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  logoWrap: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 420,
-    backgroundColor: '#1E1E20',
-    padding: 24,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#3A3A3D',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    textAlign: 'center',
-    marginTop: 4,
-    marginBottom: 16,
-  },
-  form: {
-    gap: 12,
-    marginTop: 8,
-  },
-  actions: {
-    gap: 12,
-    marginTop: 20,
-  },
+  content: { padding: 24, paddingBottom: 40 },
+  title: { color: colors.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginTop: 12 },
+  subtitle: { color: colors.muted, fontSize: 13, textAlign: 'center', marginTop: 4, marginBottom: 24 },
+  small: { color: colors.muted, fontSize: 12 },
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
 });
