@@ -1,12 +1,13 @@
 import { useRouter } from 'expo-router';
 import { ScrollView, View } from 'react-native';
+import { useDispatch } from 'react-redux';
 import AppCard from '../components/AppCard';
 import ScreenHeader from '../components/ScreenHeader';
 import WorkoutForm from '../components/WorkoutForm';
-import { useWorkouts } from '../context/WorkoutContext';
+import { createWorkout } from '../store/workoutsSlice';
 
 export default function AddScreen() {
-  const { addWorkout } = useWorkouts();
+  const dispatch = useDispatch();
   const router = useRouter();
 
   return (
@@ -22,7 +23,7 @@ export default function AddScreen() {
             key={Date.now()}
             submitLabel="Save Workout"
             onSubmit={(d) => {
-              addWorkout(d);
+              dispatch(createWorkout(d));
               router.push('/(tabs)/workouts');
             }}
           />

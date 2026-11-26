@@ -3,29 +3,44 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDispatch, useSelector } from 'react-redux';
+import CalendarModal from '../components/CalendarModal';
 import ScreenBackground from '../components/ScreenBackground';
-import SuggestionCard from '../components/SuggestionCard';
+import SuggestionCarousel from '../components/SuggestionCarousel';
 import { colors } from '../constants/theme';
-import { useAuth } from '../context/AuthContext';
-import { useWorkouts } from '../context/WorkoutContext';
-import { workoutSuggestions } from '../data/workoutSuggestions';
+import { useTheme } from '../context/ThemeContext';
+import { defaultImageFor } from '../data/categoryImages';
+import { buildSuggestedWorkout } from '../data/exerciseLibrary';
+import { selectUser } from '../store/authSlice';
+import { createWorkout, selectWorkouts } from '../store/workoutsSlice';
+import { fixImageUrl, youTubeThumb } from '../utils/video';
 
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const dateOf = (w) => (w.date ? new Date(w.date) : new Date());
 const sameDay = (a, b) => a.toDateString() === b.toDateString();
+const startOfDay = (d) => {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+};
+const addDays = (d, n) => {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+};
+const startOfWeek = (d) => addDays(startOfDay(d), -d.getDay());
 const fmtTime = (m) => `${Math.floor(m / 60)}h ${m % 60}m`;
 
-const card = {
+const getCard = () => ({
   backgroundColor: colors.card,
   borderRadius: 20,
   padding: 16,
   borderWidth: 1,
   borderColor: colors.border,
-};
+});
 
-// ---------- small pieces ----------
 function Stat({ icon, value, label }) {
   return (
     <View style={{ flex: 1, alignItems: 'center' }}>
@@ -38,6 +53,8 @@ function Stat({ icon, value, label }) {
 
 function ActivityRow({ workout, onPress }) {
   const [failed, setFailed] = useState(false);
+  const uri =
+    fixImageUrl(workout.image) || youTubeThumb(workout.video) || defaultImageFor(workout.category);
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -51,10 +68,11 @@ function ActivityRow({ workout, onPress }) {
         marginTop: 10,
       }}
     >
-      {workout.image && !failed ? (
+      {uri && !failed ? (
         <Image
-          source={{ uri: workout.image }}
+          source={{ uri }}
           style={{ width: 48, height: 48, borderRadius: 10 }}
+          resizeMode="cover"
           onError={() => setFailed(true)}
         />
       ) : (
@@ -68,7 +86,7 @@ function ActivityRow({ workout, onPress }) {
             justifyContent: 'center',
           }}
         >
-          <Text style={{ fontSize: 22 }}>🏋️</Text>
+          <Feather name="activity" size={20} color={colors.muted} />
         </View>
       )}
       <View style={{ flex: 1, marginLeft: 12 }}>
@@ -83,48 +101,43 @@ function ActivityRow({ workout, onPress }) {
   );
 }
 
-// ---------- main screen ----------
 export default function HomeScreen() {
-  const { user } = useAuth();
-  const { workouts, addWorkout } = useWorkouts();
+  useTheme();
+  const dispatch = useDispatch();
+  const user = useSelector(selectUser);
+  const workouts = useSelector(selectWorkouts);
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const card = getCard();
 
   const today = new Date();
+  const [selected, setSelected] = useState(startOfDay(today));
+  const [calOpen, setCalOpen] = useState(false);
 
-  // week (Sunday -> Saturday)
-  const weekStart = new Date(today);
-  weekStart.setHours(0, 0, 0, 0);
-  weekStart.setDate(today.getDate() - today.getDay());
-  const weekDays = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(weekStart);
-    d.setDate(weekStart.getDate() + i);
-    return d;
-  });
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 7);
+  // week of the selected day (Sunday -> Saturday)
+  const weekStart = startOfWeek(selected);
+  const weekEnd = addDays(weekStart, 7);
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const isCurrentWeek = sameDay(weekStart, startOfWeek(today));
+  const monthLabel = weekDays[3].toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  const hasWorkoutOn = (d) => workouts.some((w) => sameDay(dateOf(w), d));
+  const dayWorkouts = workouts.filter((w) => sameDay(dateOf(w), selected));
 
   const weekWorkouts = workouts.filter((w) => {
     const d = dateOf(w);
     return d >= weekStart && d < weekEnd;
   });
-
-  // minutes per weekday for the chart
   const minsPerDay = [0, 0, 0, 0, 0, 0, 0];
   weekWorkouts.forEach((w) => {
     minsPerDay[dateOf(w).getDay()] += w.duration;
   });
   const maxMins = Math.max(...minsPerDay, 1);
-
   const totalMins = weekWorkouts.reduce((a, w) => a + w.duration, 0);
   const totalKcal = weekWorkouts.reduce((a, w) => a + w.calories, 0);
-
-  // most active day
   const topIdx = minsPerDay.indexOf(Math.max(...minsPerDay));
   const topMins = minsPerDay[topIdx];
 
-  // streak: consecutive days with workouts (ending today, or yesterday)
-  const hasWorkoutOn = (d) => workouts.some((w) => sameDay(dateOf(w), d));
   let streak = 0;
   const cursor = new Date();
   if (!hasWorkoutOn(cursor)) cursor.setDate(cursor.getDate() - 1);
@@ -133,16 +146,26 @@ export default function HomeScreen() {
     cursor.setDate(cursor.getDate() - 1);
   }
 
-  const focus = workouts[0];
-  const monthLabel = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const selectedLabel = sameDay(selected, today)
+    ? 'Today'
+    : selected.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
+  const arrow = (dir) => (
+    <TouchableOpacity
+      onPress={() => setSelected(addDays(selected, dir * 7))}
+      style={{ width: 34, height: 34, alignItems: 'center', justifyContent: 'center' }}
+    >
+      <Feather name={dir < 0 ? 'chevron-left' : 'chevron-right'} size={22} color={colors.dark} />
+    </TouchableOpacity>
+  );
 
   return (
     <ScreenBackground>
       <ScrollView
         style={{ backgroundColor: 'transparent' }}
-        contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 32, paddingHorizontal: 16 }}
+        contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 120, paddingHorizontal: 16 }}
       >
-        {/* Header: Hi, name + add button */}
+        {/* Header */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flex: 1 }}>
             <Text style={{ color: colors.text, fontSize: 26, fontWeight: '900' }} numberOfLines={1}>
@@ -165,16 +188,43 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Week calendar */}
+        {/* Calendar */}
         <View style={{ backgroundColor: colors.primary, borderRadius: 24, padding: 16, marginTop: 20 }}>
-          <Text style={{ color: colors.dark, fontWeight: '800', fontSize: 15, marginBottom: 14 }}>
-            {monthLabel}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <TouchableOpacity onPress={() => setCalOpen(true)} style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ color: colors.dark, fontWeight: '800', fontSize: 15 }}>{monthLabel}</Text>
+              <Feather name="chevron-down" size={18} color={colors.dark} style={{ marginLeft: 4 }} />
+            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              {!sameDay(selected, today) ? (
+                <TouchableOpacity
+                  onPress={() => setSelected(startOfDay(today))}
+                  style={{
+                    backgroundColor: colors.dark,
+                    borderRadius: 10,
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    marginRight: 6,
+                  }}
+                >
+                  <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 12 }}>Today</Text>
+                </TouchableOpacity>
+              ) : null}
+              {arrow(-1)}
+              {arrow(1)}
+            </View>
+          </View>
+
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             {weekDays.map((d, i) => {
+              const isSel = sameDay(d, selected);
               const isToday = sameDay(d, today);
               return (
-                <View key={i} style={{ alignItems: 'center', width: 38 }}>
+                <TouchableOpacity
+                  key={i}
+                  onPress={() => setSelected(startOfDay(d))}
+                  style={{ alignItems: 'center', width: 38 }}
+                >
                   <Text style={{ color: colors.dark, opacity: 0.7, fontWeight: '700', fontSize: 12 }}>
                     {DAY_LETTERS[i]}
                   </Text>
@@ -186,12 +236,12 @@ export default function HomeScreen() {
                       marginTop: 8,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      backgroundColor: isToday ? '#fff' : 'transparent',
+                      backgroundColor: isSel ? '#fff' : 'transparent',
+                      borderWidth: isToday && !isSel ? 2 : 0,
+                      borderColor: colors.dark,
                     }}
                   >
-                    <Text style={{ color: colors.dark, fontWeight: '800', fontSize: 15 }}>
-                      {d.getDate()}
-                    </Text>
+                    <Text style={{ color: colors.dark, fontWeight: '800', fontSize: 15 }}>{d.getDate()}</Text>
                   </View>
                   <View
                     style={{
@@ -202,17 +252,37 @@ export default function HomeScreen() {
                       backgroundColor: hasWorkoutOn(d) ? colors.dark : 'transparent',
                     }}
                   />
-                </View>
+                </TouchableOpacity>
               );
             })}
           </View>
+        </View>
+
+        {/* Workouts on the selected day */}
+        <View style={[card, { marginTop: 16 }]}>
+          <Text style={{ color: colors.text, fontWeight: '800', fontSize: 16 }}>{selectedLabel}</Text>
+          {dayWorkouts.length === 0 ? (
+            <>
+              <Text style={{ color: colors.muted, marginTop: 8 }}>No workouts on this day.</Text>
+              <TouchableOpacity
+                onPress={() => router.push({ pathname: '/(tabs)/workouts', params: { tab: 'add' } })}
+                style={{ marginTop: 10 }}
+              >
+                <Text style={{ color: colors.primary, fontWeight: '800' }}>+ Add a workout</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            dayWorkouts.map((w) => (
+              <ActivityRow key={w.id} workout={w} onPress={() => router.push(`/workout/${w.id}`)} />
+            ))
+          )}
         </View>
 
         {/* Activity overview */}
         <View style={[card, { marginTop: 16 }]}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 }}>
             <Text style={{ color: colors.text, fontWeight: '800' }}>Activity Overview</Text>
-            <Text style={{ color: colors.muted, fontSize: 12 }}>This Week</Text>
+            <Text style={{ color: colors.muted, fontSize: 12 }}>{isCurrentWeek ? 'This Week' : 'Selected Week'}</Text>
           </View>
           <View style={{ flexDirection: 'row' }}>
             <Stat icon="clock" value={fmtTime(totalMins)} label="Total Time" />
@@ -221,7 +291,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Weekly progress chart */}
+        {/* Weekly chart */}
         <View style={[card, { marginTop: 16 }]}>
           <Text style={{ color: colors.text, fontWeight: '800', marginBottom: 14 }}>Weekly Progress</Text>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 120 }}>
@@ -241,7 +311,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Most active day + streak */}
+        {/* Most active + streak */}
         <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
           <View style={[card, { flex: 1 }]}>
             <Text style={{ color: colors.muted, fontSize: 12 }}>Most Active Day</Text>
@@ -261,27 +331,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Today's focus */}
-        {focus ? (
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => router.push(`/workout/${focus.id}`)}
-            style={[card, { marginTop: 16 }]}
-          >
-            <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>Today's Focus</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-              <Text style={{ color: colors.text, fontSize: 20, fontWeight: '900', flex: 1 }} numberOfLines={1}>
-                {focus.name}
-              </Text>
-              <Feather name="chevron-right" size={22} color={colors.text} />
-            </View>
-            <Text style={{ color: colors.muted, marginTop: 4 }}>
-              {focus.duration} min • {focus.calories} kcal
-            </Text>
-          </TouchableOpacity>
-        ) : null}
-
-        {/* Recent activity: 5 clickable items -> /workout/[id] */}
+        {/* Recent activity */}
         <View style={[card, { marginTop: 16 }]}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Text style={{ color: colors.text, fontSize: 17, fontWeight: '800' }}>Recent Activity</Text>
@@ -308,26 +358,22 @@ export default function HomeScreen() {
         >
           Suggested Workouts
         </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-  {workoutSuggestions.map((s) => (
-    <SuggestionCard
-      key={s.id}
-      item={s}
-      onAdd={(x) =>
-        addWorkout({
-          name: x.name,
-          duration: x.duration,
-          calories: x.calories,
-          notes: x.exercises.join(', '),
-          image: x.image,
-          category: x.category,
-          level: x.level,
-        })
-      }
-    />
-  ))}
-</ScrollView>
+
+        <View style={{ marginHorizontal: -16 }}>
+          <SuggestionCarousel onAdd={(item) => dispatch(createWorkout(buildSuggestedWorkout(item)))} />
+        </View>
       </ScrollView>
+
+      <CalendarModal
+        visible={calOpen}
+        selected={selected}
+        hasWorkoutOn={hasWorkoutOn}
+        onSelect={(d) => {
+          setSelected(startOfDay(d));
+          setCalOpen(false);
+        }}
+        onClose={() => setCalOpen(false)}
+      />
     </ScreenBackground>
   );
 }

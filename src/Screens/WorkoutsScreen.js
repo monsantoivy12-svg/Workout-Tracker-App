@@ -2,12 +2,14 @@ import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
 import AppCard from '../components/AppCard';
 import ScreenHeader from '../components/ScreenHeader';
 import WorkoutForm from '../components/WorkoutForm';
 import WorkoutItem from '../components/WorkoutItem';
 import { colors } from '../constants/theme';
-import { useWorkouts } from '../context/WorkoutContext';
+import { useTheme } from '../context/ThemeContext';
+import { createWorkout, selectWorkouts } from '../store/workoutsSlice';
 
 const FILTERS = ['All', 'Short', 'Medium', 'Long'];
 
@@ -18,7 +20,9 @@ const matchFilter = (w, f) =>
   (f === 'Long' && w.duration > 45);
 
 export default function WorkoutsScreen() {
-  const { workouts, addWorkout } = useWorkouts();
+  useTheme();
+  const dispatch = useDispatch();
+  const workouts = useSelector(selectWorkouts);
   const router = useRouter();
   const params = useLocalSearchParams();
   const [mode, setMode] = useState('list'); // 'list' | 'add'
@@ -65,7 +69,6 @@ export default function WorkoutsScreen() {
         subtitle={mode === 'add' ? 'Log what you did today' : 'What workout do you want to do today?'}
       />
 
-      {/* List | Add Workout */}
       <View
         style={{
           flexDirection: 'row',
@@ -79,13 +82,13 @@ export default function WorkoutsScreen() {
         }}
       >
         <Segment id="list" label="My Workouts" icon="list" />
-        <Segment id="add" label="Add Workout" icon="plus-circle" />
+        <Segment id="add" label="Add New" icon="plus-circle" />
       </View>
 
       {mode === 'add' ? (
         <ScrollView
           style={{ backgroundColor: 'transparent' }}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
           keyboardShouldPersistTaps="handled"
         >
           <AppCard>
@@ -93,8 +96,8 @@ export default function WorkoutsScreen() {
               key={formKey}
               submitLabel="Save Workout"
               onSubmit={(d) => {
-                addWorkout(d);
-                setFormKey((k) => k + 1); // i-reset ang form
+                dispatch(createWorkout(d));
+                setFormKey((k) => k + 1);
                 setMode('list');
                 router.setParams({ tab: 'list' });
               }}
@@ -103,7 +106,6 @@ export default function WorkoutsScreen() {
         </ScrollView>
       ) : (
         <>
-          {/* Search */}
           <View
             style={{
               flexDirection: 'row',
@@ -128,7 +130,6 @@ export default function WorkoutsScreen() {
             />
           </View>
 
-          {/* Filter chips */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -145,7 +146,9 @@ export default function WorkoutsScreen() {
                     paddingHorizontal: 22,
                     paddingVertical: 10,
                     borderRadius: 10,
-                    backgroundColor: active ? colors.primary : '#fff',
+                    backgroundColor: active ? colors.primary : colors.card,
+                    borderWidth: 1,
+                    borderColor: active ? colors.primary : colors.border,
                   }}
                 >
                   <Text style={{ fontWeight: '700', color: active ? colors.dark : colors.muted }}>{f}</Text>
@@ -154,10 +157,9 @@ export default function WorkoutsScreen() {
             })}
           </ScrollView>
 
-          {/* List: tap -> /workout/[id] */}
           <FlatList
             style={{ backgroundColor: 'transparent' }}
-            contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 24 }}
+            contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}
             data={data}
             keyExtractor={(w) => String(w.id)}
             keyboardShouldPersistTaps="handled"

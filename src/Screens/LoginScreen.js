@@ -1,7 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { useDispatch } from 'react-redux';
 import AppButton from '../components/AppButton';
 import AppInput from '../components/AppInput';
 import AppMessage from '../components/AppMessage';
@@ -9,18 +10,33 @@ import AuthHeader from '../components/AuthHeader';
 import ScreenBackground from '../components/ScreenBackground';
 import SocialButtons from '../components/SocialButtons';
 import { colors } from '../constants/theme';
-import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { loginUser } from '../store/authSlice';
+
+const makeStyles = () =>
+  StyleSheet.create({
+    content: { padding: 24, paddingBottom: 40 },
+    title: { color: colors.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginTop: 12 },
+    subtitle: { color: colors.muted, fontSize: 13, textAlign: 'center', marginTop: 4, marginBottom: 24 },
+    row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    remember: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    small: { color: colors.muted, fontSize: 12 },
+    footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
+  });
 
 export default function LoginScreen() {
+  useTheme();
+  const styles = makeStyles();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
   const [message, setMessage] = useState(null);
-  const { login } = useAuth();
+  const dispatch = useDispatch();
   const router = useRouter();
 
   const onLogin = () => {
-    const err = login(email.trim(), password);
+    const err = dispatch(loginUser(email.trim(), password));
     if (err) return setMessage({ type: 'error', text: err });
     router.replace('/(tabs)');
   };
@@ -78,13 +94,3 @@ export default function LoginScreen() {
     </ScreenBackground>
   );
 }
-
-const styles = StyleSheet.create({
-  content: { padding: 24, paddingBottom: 40 },
-  title: { color: colors.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginTop: 12 },
-  subtitle: { color: colors.muted, fontSize: 13, textAlign: 'center', marginTop: 4, marginBottom: 24 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  remember: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  small: { color: colors.muted, fontSize: 12 },
-  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
-});

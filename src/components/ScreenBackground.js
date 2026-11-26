@@ -1,9 +1,11 @@
 import { View } from 'react-native';
 import { colors } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 export default function ScreenBackground({ children }) {
+  useTheme();
   return (
-    <View style={{ flex: 1, backgroundColor: colors.dark, overflow: 'hidden' }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg, overflow: 'hidden' }}>
       <View
         pointerEvents="none"
         style={{

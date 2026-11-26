@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useDispatch } from 'react-redux';
 import AppButton from '../components/AppButton';
 import AppInput from '../components/AppInput';
 import AppMessage from '../components/AppMessage';
@@ -8,22 +9,35 @@ import AuthHeader from '../components/AuthHeader';
 import ScreenBackground from '../components/ScreenBackground';
 import SocialButtons from '../components/SocialButtons';
 import { colors } from '../constants/theme';
-import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { registerUser } from '../store/authSlice';
+
+const makeStyles = () =>
+  StyleSheet.create({
+    content: { padding: 24, paddingBottom: 40 },
+    title: { color: colors.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginTop: 12 },
+    subtitle: { color: colors.muted, fontSize: 13, textAlign: 'center', marginTop: 4, marginBottom: 24 },
+    small: { color: colors.muted, fontSize: 12 },
+    footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
+  });
 
 export default function RegisterScreen() {
+  useTheme();
+  const styles = makeStyles();
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [message, setMessage] = useState(null);
-  const { register } = useAuth();
+  const dispatch = useDispatch();
   const router = useRouter();
 
   const onRegister = () => {
     if (password !== confirm) {
       return setMessage({ type: 'error', text: 'Passwords do not match.' });
     }
-    const err = register(name.trim(), email.trim(), password);
+    const err = dispatch(registerUser(name.trim(), email.trim(), password));
     if (err) return setMessage({ type: 'error', text: err });
 
     setMessage({ type: 'success', text: 'Account created! Going to login...' });
@@ -69,11 +83,3 @@ export default function RegisterScreen() {
     </ScreenBackground>
   );
 }
-
-const styles = StyleSheet.create({
-  content: { padding: 24, paddingBottom: 40 },
-  title: { color: colors.text, fontSize: 22, fontWeight: '800', textAlign: 'center', marginTop: 12 },
-  subtitle: { color: colors.muted, fontSize: 13, textAlign: 'center', marginTop: 4, marginBottom: 24 },
-  small: { color: colors.muted, fontSize: 12 },
-  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
-});

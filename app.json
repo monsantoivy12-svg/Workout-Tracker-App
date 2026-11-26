@@ -5,10 +5,41 @@
     "scheme": "fittrack",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F0F10"
+    },
     "plugins": [
       "expo-router",
-      "expo-status-bar"
-    ]
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow 123Go FitTrack to access your photos to set a profile picture."
+        }
+      ],
+      "expo-video"
+    ],
+    "android": {
+      "package": "com.monsanto.fittrack",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0F0F10"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "034a8259-387e-4b64-936e-4341b36d0c20"
+      }
+    }
   }
 }

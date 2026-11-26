@@ -1,29 +1,60 @@
 import { Feather } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
+import { defaultImageFor } from '../data/categoryImages';
+import { defaultVideoFor } from '../data/localVideos';
+import { fixImageUrl, hasVideo, youTubeThumb } from '../utils/video';
+
+const clean = (s) => (typeof s === 'string' ? s.trim() : '');
 
 export default function WorkoutItem({ workout, onPress }) {
-  const [failed, setFailed] = useState(false);
+  useTheme(); // rerender when the theme changes
+
+  // if one image fails, move on to the next one
+  const [tryIndex, setTryIndex] = useState(0);
+
+  const videoUrl = workout.video || defaultVideoFor(workout.category);
+
+  // order: saved image -> category default -> YouTube thumbnail
+  const candidates = useMemo(() => {
+    const list = [
+      fixImageUrl(clean(workout.image)),
+      defaultImageFor(workout.category),
+      youTubeThumb(videoUrl),
+    ].filter((u) => !!u);
+    return [...new Set(list)];
+  }, [workout.image, workout.category, videoUrl]);
+
+  const uri = candidates[tryIndex]; // undefined = show the icon
 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
       <View
         style={{
-          backgroundColor: colors.light,
+          backgroundColor: colors.card,
+          borderWidth: 1,
+          borderColor: colors.border,
           borderRadius: 18,
           padding: 10,
           flexDirection: 'row',
           alignItems: 'center',
           marginBottom: 12,
+          elevation: 4,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: 0.15,
+          shadowRadius: 6,
         }}
       >
-        {workout.image && !failed ? (
+        {uri ? (
           <Image
-            source={{ uri: workout.image }}
-            style={{ width: 88, height: 88, borderRadius: 14 }}
+            key={uri}
+            source={{ uri }}
+            style={{ width: 88, height: 88, borderRadius: 14, backgroundColor: colors.surface }}
             resizeMode="cover"
-            onError={() => setFailed(true)}
+            onError={() => setTryIndex((i) => i + 1)}
           />
         ) : (
           <View
@@ -31,12 +62,12 @@ export default function WorkoutItem({ workout, onPress }) {
               width: 88,
               height: 88,
               borderRadius: 14,
-              backgroundColor: '#E5E7EB',
+              backgroundColor: colors.surface,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Text style={{ fontSize: 32 }}>🏋️</Text>
+            <Feather name="activity" size={30} color={colors.muted} />
           </View>
         )}
 
@@ -46,20 +77,23 @@ export default function WorkoutItem({ workout, onPress }) {
             style={{
               fontSize: 16,
               fontWeight: '900',
-              color: '#111',
+              color: colors.text,
               textTransform: 'uppercase',
               letterSpacing: 0.5,
             }}
           >
             {workout.name}
           </Text>
-          <Text style={{ marginTop: 8, color: '#9CA3AF', fontSize: 12, fontWeight: '700' }}>
+          <Text style={{ marginTop: 8, color: colors.muted, fontSize: 12, fontWeight: '700' }}>
             {workout.duration} MIN  •  {workout.calories} KCAL
           </Text>
         </View>
 
-        <View style={{ alignSelf: 'flex-start', padding: 4 }}>
-          <Feather name="arrow-up-right" size={20} color="#111" />
+        <View style={{ alignSelf: 'flex-start', padding: 4, alignItems: 'center' }}>
+          <Feather name="arrow-up-right" size={20} color={colors.text} />
+          {hasVideo(videoUrl) ? (
+            <Feather name="video" size={14} color={colors.primary} style={{ marginTop: 8 }} />
+          ) : null}
         </View>
       </View>
     </TouchableOpacity>

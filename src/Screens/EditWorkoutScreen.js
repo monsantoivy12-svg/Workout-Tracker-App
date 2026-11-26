@@ -1,16 +1,18 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
 import AppButton from '../components/AppButton';
 import AppCard from '../components/AppCard';
 import WorkoutForm from '../components/WorkoutForm';
 import { colors } from '../constants/theme';
-import { useWorkouts } from '../context/WorkoutContext';
+import { editWorkout, selectWorkoutById } from '../store/workoutsSlice';
 
 export default function EditWorkoutScreen() {
-  const { id } = useLocalSearchParams();
-  const { getWorkout, updateWorkout } = useWorkouts();
+  const params = useLocalSearchParams();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  const dispatch = useDispatch();
+  const w = useSelector(selectWorkoutById(id));
   const router = useRouter();
-  const w = getWorkout(id);
 
   if (!w)
     return (
@@ -27,7 +29,7 @@ export default function EditWorkoutScreen() {
           initial={w}
           submitLabel="Update Workout"
           onSubmit={(d) => {
-            updateWorkout(id, d);
+            dispatch(editWorkout(id, d));
             router.back();
           }}
         />

@@ -1,25 +1,35 @@
 import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useSelector } from 'react-redux';
 import ScreenHeader from '../components/ScreenHeader';
 import { colors } from '../constants/theme';
-import { useWorkouts } from '../context/WorkoutContext';
+import { useTheme } from '../context/ThemeContext';
+import { selectWorkouts } from '../store/workoutsSlice';
 
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const TIME_LABELS = ['Morning', 'Afternoon', 'Evening', 'Night'];
 
 const dateOf = (w) => (w.date ? new Date(w.date) : new Date());
 const sameDay = (a, b) => a.toDateString() === b.toDateString();
 const fmtTime = (m) => `${Math.floor(m / 60)}h ${m % 60}m`;
+const slotOf = (d) => {
+  const h = d.getHours();
+  if (h >= 5 && h < 12) return 0;
+  if (h >= 12 && h < 17) return 1;
+  if (h >= 17 && h < 21) return 2;
+  return 3;
+};
 
-const card = {
+const getCard = () => ({
   backgroundColor: colors.card,
   borderRadius: 20,
   padding: 16,
   borderWidth: 1,
   borderColor: colors.border,
   marginTop: 16,
-};
+});
 
 function Stat({ icon, value, label }) {
   return (
@@ -50,12 +60,12 @@ function GoalBar({ label, value, goal, unit }) {
 }
 
 export default function ProgressScreen() {
-  const { workouts } = useWorkouts();
-  const [range, setRange] = useState('week'); // 'week' | 'month'
+  useTheme();
+  const workouts = useSelector(selectWorkouts);
+  const [range, setRange] = useState('day'); // 'day' | 'week' | 'month'
+  const card = getCard();
 
   const today = new Date();
-
-  // ---- filter by range ----
   const weekStart = new Date(today);
   weekStart.setHours(0, 0, 0, 0);
   weekStart.setDate(today.getDate() - today.getDay());
@@ -64,15 +74,19 @@ export default function ProgressScreen() {
 
   const inRange = (w) => {
     const d = dateOf(w);
+    if (range === 'day') return sameDay(d, today);
     if (range === 'week') return d >= weekStart && d < weekEnd;
     return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
   };
   const list = workouts.filter(inRange);
 
-  // ---- chart buckets ----
   let labels;
   let buckets;
-  if (range === 'week') {
+  if (range === 'day') {
+    labels = TIME_LABELS;
+    buckets = [0, 0, 0, 0];
+    list.forEach((w) => (buckets[slotOf(dateOf(w))] += w.duration));
+  } else if (range === 'week') {
     labels = DAY_LETTERS;
     buckets = [0, 0, 0, 0, 0, 0, 0];
     list.forEach((w) => (buckets[dateOf(w).getDay()] += w.duration));
@@ -83,18 +97,17 @@ export default function ProgressScreen() {
   }
   const maxVal = Math.max(...buckets, 1);
 
-  // ---- totals ----
   const totalMins = list.reduce((a, w) => a + w.duration, 0);
   const totalKcal = list.reduce((a, w) => a + w.calories, 0);
   const avgMins = list.length ? Math.round(totalMins / list.length) : 0;
 
-  // ---- best day ----
   const perDay = [0, 0, 0, 0, 0, 0, 0];
   list.forEach((w) => (perDay[dateOf(w).getDay()] += w.duration));
   const bestIdx = perDay.indexOf(Math.max(...perDay));
   const bestMins = perDay[bestIdx];
 
-  // ---- streak (all workouts) ----
+  const longest = list.reduce((a, w) => (!a || w.duration > a.duration ? w : a), null);
+
   const hasWorkoutOn = (d) => workouts.some((w) => sameDay(dateOf(w), d));
   let streak = 0;
   const cursor = new Date();
@@ -104,19 +117,16 @@ export default function ProgressScreen() {
     cursor.setDate(cursor.getDate() - 1);
   }
 
-  // ---- top workouts by total minutes ----
   const byName = {};
   list.forEach((w) => {
     byName[w.name] = (byName[w.name] || 0) + w.duration;
   });
-  const top = Object.entries(byName)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3);
+  const top = Object.entries(byName).sort((a, b) => b[1] - a[1]).slice(0, 3);
   const topMax = top.length ? top[0][1] : 1;
 
-  // goals (monthly = weekly x 4)
-  const minGoal = range === 'week' ? 300 : 1200;
-  const kcalGoal = range === 'week' ? 2000 : 8000;
+  const minGoal = range === 'day' ? 60 : range === 'week' ? 300 : 1200;
+  const kcalGoal = range === 'day' ? 500 : range === 'week' ? 2000 : 8000;
+  const unitLabel = range === 'day' ? 'time of day' : range === 'week' ? 'day' : 'week';
 
   const Seg = ({ id, label }) => {
     const active = range === id;
@@ -140,8 +150,7 @@ export default function ProgressScreen() {
     <View style={{ flex: 1 }}>
       <ScreenHeader title="Progress" subtitle="Track how far you've come" />
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 32 }}>
-        {/* This Week | This Month */}
+      <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}>
         <View
           style={{
             flexDirection: 'row',
@@ -152,11 +161,11 @@ export default function ProgressScreen() {
             borderColor: colors.border,
           }}
         >
+          <Seg id="day" label="Today" />
           <Seg id="week" label="This Week" />
           <Seg id="month" label="This Month" />
         </View>
 
-        {/* Totals */}
         <View style={card}>
           <View style={{ flexDirection: 'row' }}>
             <Stat icon="award" value={list.length} label="Workouts" />
@@ -165,16 +174,40 @@ export default function ProgressScreen() {
           </View>
           <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 14 }} />
           <Text style={{ color: colors.muted, textAlign: 'center' }}>
-            Average per workout:{' '}
-            <Text style={{ color: colors.primary, fontWeight: '800' }}>{avgMins} min</Text>
+            Average per workout: <Text style={{ color: colors.primary, fontWeight: '800' }}>{avgMins} min</Text>
           </Text>
         </View>
 
-        {/* Chart */}
+        {range === 'day' ? (
+          <View style={card}>
+            <Text style={{ color: colors.text, fontWeight: '800' }}>
+              Today, {today.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+            </Text>
+            {list.length === 0 ? (
+              <Text style={{ color: colors.muted, marginTop: 10 }}>No workouts today yet. Let's get moving!</Text>
+            ) : (
+              list.map((w) => (
+                <View
+                  key={w.id}
+                  style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.text, fontWeight: '700' }}>{w.name}</Text>
+                    <Text style={{ color: colors.muted, fontSize: 12 }}>
+                      {dateOf(w).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                    </Text>
+                  </View>
+                  <Text style={{ color: colors.primary, fontWeight: '800' }}>
+                    {w.duration} min • {w.calories} kcal
+                  </Text>
+                </View>
+              ))
+            )}
+          </View>
+        ) : null}
+
         <View style={card}>
-          <Text style={{ color: colors.text, fontWeight: '800', marginBottom: 14 }}>
-            Minutes per {range === 'week' ? 'day' : 'week'}
-          </Text>
+          <Text style={{ color: colors.text, fontWeight: '800', marginBottom: 14 }}>Minutes per {unitLabel}</Text>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 140 }}>
             {buckets.map((m, i) => (
               <View key={i} style={{ alignItems: 'center', flex: 1 }}>
@@ -187,28 +220,34 @@ export default function ProgressScreen() {
                     backgroundColor: m > 0 ? colors.primary : colors.surface,
                   }}
                 />
-                <Text style={{ color: colors.muted, fontSize: 11, marginTop: 6 }}>{labels[i]}</Text>
+                <Text style={{ color: colors.muted, fontSize: 10, marginTop: 6 }}>{labels[i]}</Text>
               </View>
             ))}
           </View>
         </View>
 
-        {/* Goals */}
         <View style={card}>
-          <Text style={{ color: colors.text, fontWeight: '800' }}>Goals</Text>
+          <Text style={{ color: colors.text, fontWeight: '800' }}>
+            {range === 'day' ? 'Daily Goals' : range === 'week' ? 'Weekly Goals' : 'Monthly Goals'}
+          </Text>
           <GoalBar label="Active minutes" value={totalMins} goal={minGoal} unit="min" />
           <GoalBar label="Calories burned" value={totalKcal} goal={kcalGoal} unit="kcal" />
         </View>
 
-        {/* Best day + streak */}
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <View style={[card, { flex: 1 }]}>
-            <Text style={{ color: colors.muted, fontSize: 12 }}>Best Day</Text>
-            <Text style={{ color: colors.text, fontWeight: '900', fontSize: 18, marginTop: 6 }}>
-              {bestMins > 0 ? DAY_NAMES[bestIdx] : '—'}
+            <Text style={{ color: colors.muted, fontSize: 12 }}>{range === 'day' ? 'Longest Session' : 'Best Day'}</Text>
+            <Text style={{ color: colors.text, fontWeight: '900', fontSize: 18, marginTop: 6 }} numberOfLines={1}>
+              {range === 'day' ? (longest ? longest.name : '—') : bestMins > 0 ? DAY_NAMES[bestIdx] : '—'}
             </Text>
             <Text style={{ color: colors.primary, fontWeight: '700', marginTop: 2 }}>
-              {bestMins > 0 ? fmtTime(bestMins) : 'No data'}
+              {range === 'day'
+                ? longest
+                  ? `${longest.duration} min`
+                  : 'No data'
+                : bestMins > 0
+                ? fmtTime(bestMins)
+                : 'No data'}
             </Text>
           </View>
           <View style={[card, { flex: 1 }]}>
@@ -220,7 +259,6 @@ export default function ProgressScreen() {
           </View>
         </View>
 
-        {/* Top workouts */}
         <View style={card}>
           <Text style={{ color: colors.text, fontWeight: '800' }}>Top Workouts</Text>
           {top.length === 0 ? (
